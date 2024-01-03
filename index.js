@@ -5,7 +5,7 @@ const express = require("express");
 
 connectToMongo();
 const app = express();
-const port = 3000;
+const port = 5555;
 
 //Middleware to accept and return json content in a request
 app.use(express.json());
