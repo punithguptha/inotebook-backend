@@ -6,7 +6,7 @@ const bcrypt = require("bcryptjs");
 const jwt=require('jsonwebtoken');
 
 /* 
-    POST: https://localhost:3000/api/auth/createuser.
+    POST: http://localhost:5555/api/auth/createuser.
     Description: Creates a user with the provided details
 */
 router.post("/createuser", [body("email", "Enter a valid Email").isEmail(), body("name", "Min length of name required is 3").isLength({ min: 3 }), body("password", "Password should atleast be 5 characters long").isLength({ min: 5 })], async (req, res) => {
@@ -24,11 +24,39 @@ router.post("/createuser", [body("email", "Enter a valid Email").isEmail(), body
     let user = new User({ name: req.body.name, email: req.body.email, password: safePassword });
     await user.save();
     const privateKey=process.env.PRIVATE_KEY?process.env.PRIVATE_KEY:"defaultprivate@key";
-    const authToken=jwt.sign( {user:{id: user.id }},privateKey);
+    const authToken=await jwt.sign( {user:{id: user.id }},privateKey);
     return res.json({"authToken":authToken});
   } catch (error) {
     res.status(500).json({ error: "Some error occured" });
   }
+});
+
+
+/** 
+ * POST: http://localhost:5555/api/auth/login
+ * Description: Authenticate a user. Login is not required to access this api
+*/
+router.post("/login",[body("email","Enter a valid Email").isEmail(),body("password","Password shouldnt be empty").notEmpty()], async(req,res)=>{
+    const valResult=validationResult(req);
+    if(!valResult.isEmpty()){
+        return res.status(400).json({"errors":valResult.array()});
+    }
+    const {email,password}=req.body;
+    try {
+        let user=await User.findOne({"email":email});
+        if(!user){
+            return res.status(400).json({"errors":"Please try to login with correct credentials"});
+        }
+        var passwordCompare=await bcrypt.compare(password,user.password);
+        if(!passwordCompare){
+            return res.status(400).json({"errors":"Please try to login with correct credentials"});
+        }
+        const privateKey=process.env.PRIVATE_KEY?process.env.PRIVATE_KEY:"defaultprivate@key";
+        const authToken=jwt.sign( {user:{id: user.id }},privateKey);
+        return res.json({"authToken":authToken});
+    } catch (error) {
+        res.status(500).json({"error":"Internal Server Error"});
+    }
 });
 
 module.exports = router;
