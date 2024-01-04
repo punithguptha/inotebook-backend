@@ -2,6 +2,11 @@ const mongoose=require('mongoose');
 const { Schema } = mongoose;
 
 const notesSchema=new Schema({
+    // User here is a foreign key mapping to user model
+    user:{
+        type: mongoose.SchemaTypes.ObjectId,
+        ref:'User'
+    },
     title:{
         type:String,
         required:true
